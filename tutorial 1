@@ -1,0 +1,7 @@
+#Call libraries
+library(WGCNA)
+library(cluster)
+allowWGCNAthreads()
+
+#read in csv file
+dat1 = read.csv(file.choose())
