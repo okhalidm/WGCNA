@@ -16,3 +16,59 @@ rownames(datExpr1)=names(dat1)[-c(1)]
 
 # Now we read in the physiological trait data
 traitData = read.csv("SampleAnnotation.csv")
+
+A=adjacency(t(datExpr),type="distance")
+# this calculates the whole network connectivity
+k=as.numeric(apply(A,2,sum))-1
+# standardized connectivity
+Z.k=scale(k)
+
+# Designate samples as outlying
+# if their Z.k value is below the threshold
+thresholdZ.k=-5 # often -2.5
+
+# the color vector indicates outlyingness (red)
+outlierColor=ifelse(Z.k<thresholdZ.k,"red","black")
+
+# calculate the cluster tree using flahsClust or hclust
+sampleTree = flashClust(as.dist(1-A), method = "average")
+
+datTraits= allTraits[,3:5]
+# Convert traits to a color representation:
+# where red indicates high values
+traitColors=data.frame(numbers2colors(datTraits,signed=FALSE))
+dimnames(traitColors)[[2]]=paste(names(datTraits),"C",sep="")
+datColors=data.frame(outlierC=outlierColor,traitColors)
+# Plot the sample dendrogram and the colors underneath.
+plotDendroAndColors(sampleTree,groupLabels=names(datColors),
+colors=datColors,main="Sample dendrogram and trait heatmap")
+
+powers=c(1:20) # in practice this should include powers up to 20.
+# choose power based on SFT criterion
+sft=pickSoftThreshold(datExpr,powerVector=powers, networkType = "signed")
+
+
+par(mfrow=c(1,2))
+# SFT index as a function of different powers
+plot(sft$fitIndices[,1],-sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+xlab="Soft Threshold (power)",ylab="SFT, signed R^2",type="n",main=paste("Scale independence"))
+text(sft$fitIndices[,1],-sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+labels=powers,col="red")
+# this line corresponds to using an R^2 cut-off of h
+abline(h=0.90,col="red")
+# Mean connectivity as a function of different powers
+plot(sft$fitIndices[,1],sft$fitIndices[,5],type="n",
+xlab="Soft Threshold (power)",ylab="Mean Connectivity",main=paste("Mean connectivity"))
+text(sft$fitIndices[,1],sft$fitIndices[,5],labels=powers,col="red")
+
+mergingThresh = 0.25
+net = blockwiseModules(datExpr,corType="pearson",
+maxBlockSize=10000,networkType="signed",power=20,minModuleSize=1000,
+mergeCutHeight=mergingThresh,numericLabels=TRUE,saveTOMs=TRUE,
+pamRespectsDendro=FALSE,saveTOMFileBase="mouse_met_TOM")
+moduleLabelsAutomatic=net$colors
+# Convert labels to colors for plotting
+moduleColorsAutomatic = labels2colors(moduleLabelsAutomatic)
+
+# A data frame with module eigengenes can be obtained as follows
+MEsAutomatic=net$MEs
