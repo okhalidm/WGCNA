@@ -1,7 +1,18 @@
 #Call libraries
 library(WGCNA)
 library(cluster)
-allowWGCNAthreads()
+library(flashClust)
+
+#allow for multiple threads
+allowWGCNAThreads()
 
 #read in csv file
 dat1 = read.csv(file.choose())
+
+#Remove gene information and transpose the expression data
+datExpr1=as.data.frame(t(dat1[, -c(1)]))
+names(datExpr1)=dat1$ProbeSetID
+rownames(datExpr1)=names(dat1)[-c(1)]
+
+# Now we read in the physiological trait data
+traitData = read.csv("SampleAnnotation.csv")
