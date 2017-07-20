@@ -72,3 +72,30 @@ moduleColorsAutomatic = labels2colors(moduleLabelsAutomatic)
 
 # A data frame with module eigengenes can be obtained as follows
 MEsAutomatic=net$MEs
+
+###We identify modules that are significantly associated with the physiological traits. The correlation to the trait is the top value and the significance of the module to the trait is in parentheses.
+
+# Choose a module assignment
+moduleColors=moduleColorsAutomatic
+# Define numbers of genes and samples
+nGenes = ncol(datExpr)
+nSamples = nrow(datExpr)
+# Recalculate MEs with color labels
+MEs0 = moduleEigengenes(datExpr,moduleColors)$eigengenes
+MEs = orderMEs(MEs0)
+modTraitCor = cor(MEs, datTraits, use = "p")
+modTraitP = corPvalueStudent(modTraitCor, nSamples)
+#Since we have a moderately large number of modules and traits,
+#a suitable graphical representation will help in reading
+#the table. We color code each association by the correlation value:
+# Will display correlations and their p-values
+textMatrix = paste(signif(modTraitCor, 2), "\n(",
+signif(modTraitP, 1), ")", sep = "")
+dim(textMatrix) = dim(modTraitCor)
+par(mar = c(4, 8.5, 2, 3))
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = modTraitCor, xLabels = names(datTraits),
+yLabels = names(MEs), ySymbols = names(MEs), 
+colorLabels =FALSE,colors=blueWhiteRed(50),textMatrix=textMatrix,
+setStdMargins = FALSE, cex.text = 0.5, zlim = c(-1,1),
+main = paste("Module-trait relationships"))
